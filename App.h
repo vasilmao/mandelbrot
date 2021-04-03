@@ -17,6 +17,5 @@ struct App {
 };
 
 void PrepareScene(App* app);
-void RenderScene(App* app);
 void initSDL(App* app);
 void MandCycle(App* app);
