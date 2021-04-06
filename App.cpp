@@ -40,7 +40,7 @@ void initSDL(App* app) {
 		printf("Failed to create renderer: %s\n", SDL_GetError());
 		exit(1);
 	}
-	app->scale = 0.005;
+	app->scale = 0.00005;
 	app->c_x = SCREEN_WIDTH / 2 * app->scale;
 	app->c_y = SCREEN_HEIGHT / 2 * app->scale;
 }
@@ -93,6 +93,7 @@ void MandCycle(App* app) {
 		printf("%lf\n", 1000 / ((double)(SDL_GetTicks() - t)));
 		SDL_UpdateWindowSurface(app->window);
         // RenderScene(app);
+		break;
     }
 }
 
