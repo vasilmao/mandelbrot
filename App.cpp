@@ -16,18 +16,18 @@ inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_comp
 void ParseEvent(App* app, SDL_Event event);
 
 inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_compare, unsigned int* color_to_set) {
-	int i = 0;
-	__m256d _v_x0 = x;
-	__m256d _v_y0 = _mm256_set1_pd(y);
-	__m256d _v_x  = x;
-	__m256d _v_y  = _v_y0;
+	int     i               = 0;
+	__m256d _v_x0           = x;
+	__m256d _v_y0           = _mm256_set1_pd(y);
+	__m256d _v_x            = x;
+	__m256d _v_y            = _v_y0;
 	__m256i _v_iter_counter = _mm256_setzero_si256();
 	for (; i < MAXITER; ++i) {
-		__m256d _v_x2 = _mm256_mul_pd(_v_x, _v_x);
-		__m256d _v_y2 = _mm256_mul_pd(_v_y, _v_y);
-		__m256d _v_xy = _mm256_mul_pd(_v_x, _v_y);
+		__m256d _v_x2     = _mm256_mul_pd(_v_x, _v_x);
+		__m256d _v_y2     = _mm256_mul_pd(_v_y, _v_y);
+		__m256d _v_xy     = _mm256_mul_pd(_v_x, _v_y);
 		__m256d _v_length = _mm256_add_pd(_v_x2, _v_y2);
-		__m256d _v_cmp = _mm256_cmp_pd(_v_length, _v_MAXCOORD, 1);
+		__m256d _v_cmp    = _mm256_cmp_pd(_v_length, _v_MAXCOORD, 1);
 		int mask = _mm256_movemask_pd(_v_cmp);
 		if (!mask) {
 			break;
@@ -36,14 +36,14 @@ inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_comp
 		_v_x = _mm256_add_pd(_mm256_sub_pd(_v_x2, _v_y2), _v_x0);
 		_v_y = _mm256_add_pd(_mm256_mul_pd(_v_xy, _v_two), _v_y0);
 	}
-	double color_d[4] = {0};
+	double    color_d[4]        = {0};
 	long long counter_arr_ll[4] = {0};
-	double counter_arr_d[4]  = {0};
+	double    counter_arr_d[4]  = {0};
 
 	__m256d _v_color = _mm256_setzero_pd();
 
 	_mm256_maskstore_epi64(counter_arr_ll, _mm256_set1_epi64x(ALL_F), _v_iter_counter);
-	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr_ll[i];
+	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr_ll[i]; // conver int64 to double
 	__m256d counter_d_v = _mm256_loadu_pd(counter_arr_d);
 
 	_v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(counter_d_v, _v_MAXITER));
@@ -111,7 +111,6 @@ void ParseEvent(App* app, SDL_Event event) {
 
 void MandCycle(App* app) {
     SDL_Event event;
-	printf("%d\n", app->surface->format->BytesPerPixel);
     while (app->running) {
         while (SDL_PollEvent(&event)) {
             ParseEvent(app, event);
@@ -120,6 +119,7 @@ void MandCycle(App* app) {
         PrepareScene(app);
 		printf("%lf\n", 1000 / ((double)(SDL_GetTicks() - ticks_before_computing)));
 		SDL_UpdateWindowSurface(app->window);
+		break;
     }
 }
 
