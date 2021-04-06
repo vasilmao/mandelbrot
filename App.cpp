@@ -1,53 +1,56 @@
 #include "App.h"
 
-const int maxn = 255;
-const double maxcoord = 100;
+const int           MAXITER = 255;
+const double        MAXCOORD = 100;
+const long long int ALL_F = -1;
+const double        start_scale = 0.005;
+const double        movement_speed = 50.0;
+const __m256d       _v_two = _mm256_set1_pd(2);
+const __m256d       _v_MAXITER  = _mm256_set1_pd(MAXITER);
+const __m256d       _v_128   = _mm256_set1_pd(128);
+const __m256d       _v_255   = _mm256_set1_pd(255);
+const __m256d       _v_512   = _mm256_set1_pd(512);
+const __m256d       _v_MAXCOORD = _mm256_set1_pd(MAXCOORD);
 
-inline void GetPointColor(App* app, __m256d x0, double y, double* coords_for_compare, unsigned int* color_to_set);
+inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_compare, unsigned int* color_to_set);
 void ParseEvent(App* app, SDL_Event event);
 
-inline void GetPointColor(App* app, __m256d x0, double y, double* coords_for_compare, unsigned int* color_to_set) {
+inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_compare, unsigned int* color_to_set) {
 	int i = 0;
-	double color_d[4] = {0};
-	__m256d y0 = _mm256_set1_pd(y);
-	__m256d x_v = x0;
-	__m256d y_v = y0;
-	__m256d two_v = _mm256_set1_pd(2);
-	__m256d out_of_range_v = _mm256_set1_pd(maxcoord);
-	__m256i i_counter_v = _mm256_setzero_si256();
-	for (; i < maxn; ++i) {
-		__m256d x2 = _mm256_mul_pd(x_v, x_v);
-		__m256d y2 = _mm256_mul_pd(y_v, y_v);
-		__m256d xy = _mm256_mul_pd(x_v, y_v);
-		__m256d length = _mm256_add_pd(x2, y2);
-		__m256d cmp = _mm256_cmp_pd(length, out_of_range_v, 1);
-		int mask = _mm256_movemask_pd(cmp);
+	__m256d _v_x0 = x;
+	__m256d _v_y0 = _mm256_set1_pd(y);
+	__m256d _v_x  = x;
+	__m256d _v_y  = _v_y0;
+	__m256i _v_iter_counter = _mm256_setzero_si256();
+	for (; i < MAXITER; ++i) {
+		__m256d _v_x2 = _mm256_mul_pd(_v_x, _v_x);
+		__m256d _v_y2 = _mm256_mul_pd(_v_y, _v_y);
+		__m256d _v_xy = _mm256_mul_pd(_v_x, _v_y);
+		__m256d _v_length = _mm256_add_pd(_v_x2, _v_y2);
+		__m256d _v_cmp = _mm256_cmp_pd(_v_length, _v_MAXCOORD, 1);
+		int mask = _mm256_movemask_pd(_v_cmp);
 		if (!mask) {
 			break;
 		}
-		i_counter_v = _mm256_sub_epi64 (i_counter_v, _mm256_castpd_si256(cmp));
-		x_v = _mm256_add_pd(_mm256_sub_pd(x2, y2), x0);
-		y_v = _mm256_add_pd(_mm256_mul_pd(xy, two_v), y0);
+		_v_iter_counter = _mm256_sub_epi64 (_v_iter_counter, _mm256_castpd_si256(_v_cmp));
+		_v_x = _mm256_add_pd(_mm256_sub_pd(_v_x2, _v_y2), _v_x0);
+		_v_y = _mm256_add_pd(_mm256_mul_pd(_v_xy, _v_two), _v_y0);
 	}
-	__m256d maxn_v = _mm256_set1_pd(maxn);
-	__m256d vec_128 = _mm256_set1_pd(128);
-	__m256d vec_255 = _mm256_set1_pd(255);
-	__m256d vec_512 = _mm256_set1_pd(512);
-	__m256d color_v = _mm256_loadu_pd(color_d);
-	long long counter_arr[4] = {0};
+	double color_d[4] = {0};
+	long long counter_arr_ll[4] = {0};
 	double counter_arr_d[4]  = {0};
 
-	_mm256_maskstore_epi64(counter_arr, _mm256_set1_epi64x(-1), i_counter_v);
-	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr[i];
+	__m256d _v_color = _mm256_setzero_pd();
+
+	_mm256_maskstore_epi64(counter_arr_ll, _mm256_set1_epi64x(ALL_F), _v_iter_counter);
+	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr_ll[i];
 	__m256d counter_d_v = _mm256_loadu_pd(counter_arr_d);
 
-	color_v = _mm256_mul_pd(vec_255, _mm256_div_pd(counter_d_v, maxn_v));
-	color_v = _mm256_add_pd(_mm256_mul_pd(color_v, vec_128), _mm256_mul_pd(color_v, vec_512));
-	_mm256_storeu_pd(color_d, color_v);
-	color_to_set[0] = color_d[0];
-	color_to_set[1] = color_d[1];
-	color_to_set[2] = color_d[2];
-	color_to_set[3] = color_d[3];
+	_v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(counter_d_v, _v_MAXITER));
+	_v_color = _mm256_add_pd(_mm256_mul_pd(_v_color, _v_128), _mm256_mul_pd(_v_color, _v_512));
+	_mm256_storeu_pd(color_d, _v_color);
+
+	for (int i = 0; i < 4; ++i) color_to_set[i] = color_d[i];
 }
 
 void initSDL(App* app) {
@@ -70,7 +73,7 @@ void initSDL(App* app) {
 		printf("Failed to create renderer: %s\n", SDL_GetError());
 		exit(1);
 	}
-	app->scale = 0.005;
+	app->scale = start_scale;
 	app->c_x = SCREEN_WIDTH / 2 * app->scale;
 	app->c_y = SCREEN_HEIGHT / 2 * app->scale;
 }
@@ -82,16 +85,16 @@ void ParseEvent(App* app, SDL_Event event) {
 	if (event.type == SDL_KEYDOWN) {
 		switch (event.key.keysym.sym) {
 			case SDLK_RIGHT:
-				app->c_x -= 50.0 * app->scale;
+				app->c_x -= movement_speed * app->scale;
 				break;
 			case SDLK_LEFT:
-				app->c_x += 50.0 * app->scale;
+				app->c_x += movement_speed * app->scale;
 				break;
 			case SDLK_UP:
-				app->c_y += 50.0 * app->scale;
+				app->c_y += movement_speed * app->scale;
 				break;
 			case SDLK_DOWN:
-				app->c_y -= 50.0 * app->scale;
+				app->c_y -= movement_speed * app->scale;
 				break;
 			case SDLK_LSHIFT:
 				app->scale /= 2;
@@ -110,14 +113,13 @@ void MandCycle(App* app) {
     SDL_Event event;
 	printf("%d\n", app->surface->format->BytesPerPixel);
     while (app->running) {
-		unsigned int t = SDL_GetTicks();
         while (SDL_PollEvent(&event)) {
             ParseEvent(app, event);
         }
+		unsigned int ticks_before_computing = SDL_GetTicks();
         PrepareScene(app);
-		printf("%lf\n", 1000 / ((double)(SDL_GetTicks() - t)));
+		printf("%lf\n", 1000 / ((double)(SDL_GetTicks() - ticks_before_computing)));
 		SDL_UpdateWindowSurface(app->window);
-		// break;
     }
 }
 
