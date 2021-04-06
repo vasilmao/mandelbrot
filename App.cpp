@@ -27,12 +27,12 @@ inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_comp
 		__m256d _v_y2     = _mm256_mul_pd(_v_y, _v_y);
 		__m256d _v_xy     = _mm256_mul_pd(_v_x, _v_y);
 		__m256d _v_length = _mm256_add_pd(_v_x2, _v_y2);
-		__m256d _v_cmp    = _mm256_cmp_pd(_v_length, _v_MAXCOORD, 1);
-		int mask = _mm256_movemask_pd(_v_cmp);
+		__m256d _v_cmp_result    = _mm256_cmp_pd(_v_length, _v_MAXCOORD, 1);
+		int mask = _mm256_movemask_pd(_v_cmp_result);
 		if (!mask) {
 			break;
 		}
-		_v_iter_counter = _mm256_sub_epi64 (_v_iter_counter, _mm256_castpd_si256(_v_cmp));
+		_v_iter_counter = _mm256_sub_epi64 (_v_iter_counter, _mm256_castpd_si256(_v_cmp_result));
 		_v_x = _mm256_add_pd(_mm256_sub_pd(_v_x2, _v_y2), _v_x0);
 		_v_y = _mm256_add_pd(_mm256_mul_pd(_v_xy, _v_two), _v_y0);
 	}
@@ -44,9 +44,9 @@ inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_comp
 
 	_mm256_maskstore_epi64(counter_arr_ll, _mm256_set1_epi64x(ALL_F), _v_iter_counter);
 	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr_ll[i]; // conver int64 to double
-	__m256d counter_d_v = _mm256_loadu_pd(counter_arr_d);
+	__m256d _v_counter_d = _mm256_loadu_pd(counter_arr_d);
 
-	_v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(counter_d_v, _v_MAXITER));
+	_v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(_v_counter_d, _v_MAXITER));
 	_v_color = _mm256_add_pd(_mm256_mul_pd(_v_color, _v_128), _mm256_mul_pd(_v_color, _v_512));
 	_mm256_storeu_pd(color_d, _v_color);
 
