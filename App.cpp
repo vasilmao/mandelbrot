@@ -13,60 +13,69 @@ inline void GetPointColor(App* app, __m256d x0, double y, double* coords_for_com
 	__m256d x_v = x0;
 	__m256d y_v = y0;
 	__m256d two_v = _mm256_set1_pd(2);
-	char mask = 15;
-	char mask_to_add = 0;
+	__m256d out_of_range_v = _mm256_set1_pd(maxcoord);
+	__m128i i_counter_v = _mm_setzero_si128();
+	// char mask = 15;
+	// char mask_to_add = 0;
 	for (; i < maxn; ++i) {
-		mask_to_add = 0;
 		__m256d x2 = _mm256_mul_pd(x_v, x_v);
 		__m256d y2 = _mm256_mul_pd(y_v, y_v);
 		__m256d xy = _mm256_mul_pd(x_v, y_v);
 		__m256d length = _mm256_add_pd(x2, y2);
-		_mm256_storeu_pd(coords_for_compare, length);
-		if (mask & 1) {
-			if (coords_for_compare[0] >= maxcoord) {
-				mask &= (15 - 1);
-				color_d[0] = i;
-			}
+		__m256d cmp = _mm256_cmp_pd(length, out_of_range_v, 1);
+		int mask = _mm256_movemask_pd(cmp);
+		if (!mask) {
+			break;
 		}
-		if (mask & 2) {
-			if (coords_for_compare[1] >= maxcoord) {
-				mask &= (15 - 2);
-				color_d[1] = i;
-			}
-		}
-		if (mask & 4) {
-			if (coords_for_compare[2] >= maxcoord) {
-				mask &= (15 - 4);
-				color_d[2] = i;
-			}
-		}
-		if (mask & 8) {
-			if (coords_for_compare[3] >= maxcoord) {
-				mask &= (15 - 8);
-				color_d[3] = i;
-			}
-		}
+		i_counter_v = _mm_sub_epi32 (i_counter_v, _mm256_castsi256_si128(_mm256_castpd_si256(cmp)));
+		// _mm256_storeu_pd(coords_for_compare, length);
+
+		// if (mask & 1) {
+		// 	if (coords_for_compare[0] >= maxcoord) {
+		// 		mask &= (15 - 1);
+		// 		color_d[0] = i;
+		// 	}
+		// }
+		// if (mask & 2) {
+		// 	if (coords_for_compare[1] >= maxcoord) {
+		// 		mask &= (15 - 2);
+		// 		color_d[1] = i;
+		// 	}
+		// }
+		// if (mask & 4) {
+		// 	if (coords_for_compare[2] >= maxcoord) {
+		// 		mask &= (15 - 4);
+		// 		color_d[2] = i;
+		// 	}
+		// }
+		// if (mask & 8) {
+		// 	if (coords_for_compare[3] >= maxcoord) {
+		// 		mask &= (15 - 8);
+		// 		color_d[3] = i;
+		// 	}
+		// }
 		x_v = _mm256_add_pd(_mm256_sub_pd(x2, y2), x0);
 		y_v = _mm256_add_pd(_mm256_mul_pd(xy, two_v), y0);
 	}
-	if (color_d[0] == 0) {
-		color_d[0] = maxn;
-	}
-	if (color_d[1] == 0) {
-		color_d[1] = maxn;
-	}
-	if (color_d[2] == 0) {
-		color_d[2] = maxn;
-	}
-	if (color_d[3] == 0) {
-		color_d[3] = maxn;
-	}
+	// if (color_d[0] == 0) {
+	// 	color_d[0] = maxn;
+	// }
+	// if (color_d[1] == 0) {
+	// 	color_d[1] = maxn;
+	// }
+	// if (color_d[2] == 0) {
+	// 	color_d[2] = maxn;
+	// }
+	// if (color_d[3] == 0) {
+	// 	color_d[3] = maxn;
+	// }
 	__m256d maxn_v = _mm256_set1_pd(maxn);
 	__m256d vec_128 = _mm256_set1_pd(128);
 	__m256d vec_255 = _mm256_set1_pd(255);
 	__m256d vec_512 = _mm256_set1_pd(512);
 	__m256d color_v = _mm256_loadu_pd(color_d);
-	color_v = _mm256_mul_pd(vec_255, _mm256_div_pd(color_v, maxn_v));
+	__m256d counter_d_v = _mm256_cvtepi32_pd(i_counter_v);
+	color_v = _mm256_mul_pd(vec_255, _mm256_div_pd(counter_d_v, maxn_v));
 	color_v = _mm256_add_pd(_mm256_mul_pd(color_v, vec_128), _mm256_mul_pd(color_v, vec_512));
 	_mm256_storeu_pd(color_d, color_v);
 	color_to_set[0] = color_d[0];
