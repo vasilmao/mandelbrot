@@ -40,13 +40,11 @@ inline void GetPointColor(App* app, __m256d x, double y, double* coords_for_comp
 	long long counter_arr_ll[4] = {0};
 	double    counter_arr_d[4]  = {0};
 
-	__m256d _v_color = _mm256_setzero_pd();
-
 	_mm256_maskstore_epi64(counter_arr_ll, _mm256_set1_epi64x(ALL_F), _v_iter_counter);
 	for (int i = 0; i < 4; ++i) counter_arr_d[i] = counter_arr_ll[i]; // conver int64 to double
 	__m256d _v_counter_d = _mm256_loadu_pd(counter_arr_d);
 
-	_v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(_v_counter_d, _v_MAXITER));
+	__m256d _v_color = _mm256_mul_pd(_v_255, _mm256_div_pd(_v_counter_d, _v_MAXITER));
 	_v_color = _mm256_add_pd(_mm256_mul_pd(_v_color, _v_128), _mm256_mul_pd(_v_color, _v_512));
 	_mm256_storeu_pd(color_d, _v_color);
 
@@ -119,7 +117,7 @@ void MandCycle(App* app) {
         PrepareScene(app);
 		printf("%lf\n", 1000 / ((double)(SDL_GetTicks() - ticks_before_computing)));
 		SDL_UpdateWindowSurface(app->window);
-		break;
+		// break;
     }
 }
 
